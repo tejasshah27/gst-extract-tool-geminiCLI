@@ -31,6 +31,13 @@ public class Gstr2aParser {
         this.appConfig = appConfig;
     }
 
+    private static class ParserContext {
+        String lastGstin = "";
+        String lastInvNum = "";
+        LocalDate lastInvDate = null;
+        String lastPos = "";
+    }
+
     public ParsingResult parse(InputStream inputStream, SourceType sourceType) throws Exception {
         List<InwardInvoice> invoices = new ArrayList<>();
         List<ValidationError> errors = new ArrayList<>();
@@ -51,7 +58,10 @@ public class Gstr2aParser {
 
     private void parseSheet(Sheet sheet, SourceType sourceType, List<InwardInvoice> invoices, List<ValidationError> errors) {
         String sheetName = sheet.getSheetName();
-        Map<String, List<String>> aliases = appConfig.getColumnMappings().get("gstr2a").get("b2b");
+        Map<String, Map<String, List<String>>> gstr2aMappings = appConfig.getColumnMappings().get("gstr2a");
+        if (gstr2aMappings == null) return;
+        
+        Map<String, List<String>> aliases = gstr2aMappings.get("b2b");
         Map<String, Integer> indices = SubTableParser.getColumnIndices(sheet, aliases);
 
         if (indices.isEmpty()) {
@@ -59,19 +69,20 @@ public class Gstr2aParser {
             return;
         }
 
-        // Find header row to start parsing from next row
         int headerRowIndex = findHeaderRow(sheet, indices);
         if (headerRowIndex == -1) {
             errors.add(new ValidationError(sheetName, 0, "Sheet", "Could not find header row for " + sheetName, Severity.ERROR));
             return;
         }
 
+        ParserContext context = new ParserContext();
+
         for (int i = headerRowIndex + 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             if (row == null || isRowEmpty(row)) continue;
 
             try {
-                InwardInvoice invoice = parseRow(row, indices, sourceType, sheetName, errors);
+                InwardInvoice invoice = parseRow(row, indices, sourceType, sheetName, errors, context);
                 if (invoice != null) {
                     invoices.add(invoice);
                 }
@@ -82,13 +93,12 @@ public class Gstr2aParser {
     }
 
     private int findHeaderRow(Sheet sheet, Map<String, Integer> indices) {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) { // Check up to 20 rows for multi-line headers
             Row row = sheet.getRow(i);
             if (row == null) continue;
             for (Integer index : indices.values()) {
                 Cell cell = row.getCell(index);
                 if (cell != null && cell.getCellType() == CellType.STRING) {
-                    // Check if any of our aliases match this cell (simple check)
                     return i;
                 }
             }
@@ -99,18 +109,49 @@ public class Gstr2aParser {
     private boolean isRowEmpty(Row row) {
         for (int c = row.getFirstCellNum(); c < row.getLastCellNum(); c++) {
             Cell cell = row.getCell(c);
-            if (cell != null && cell.getCellType() != CellType.BLANK)
-                return false;
+            if (cell != null && cell.getCellType() != CellType.BLANK) {
+                // Check if it's a numeric cell with a non-zero value or a string cell with text
+                if (cell.getCellType() == CellType.NUMERIC && cell.getNumericCellValue() != 0) return false;
+                if (cell.getCellType() == CellType.STRING && !cell.getStringCellValue().trim().isEmpty()) return false;
+                if (cell.getCellType() == CellType.FORMULA) return false;
+            }
         }
         return true;
     }
 
-    private InwardInvoice parseRow(Row row, Map<String, Integer> indices, SourceType sourceType, String sheetName, List<ValidationError> errors) {
+    private InwardInvoice parseRow(Row row, Map<String, Integer> indices, SourceType sourceType, String sheetName, List<ValidationError> errors, ParserContext context) {
         int rowNum = row.getRowNum() + 1;
 
         String gstin = getStringValue(row, indices, "gstin");
         String invNum = getStringValue(row, indices, "invoiceNumber");
         LocalDate invDate = getLocalDateValue(row, indices, "invoiceDate");
+        String pos = getStringValue(row, indices, "pos");
+
+        // Carry forward mechanism for merged/blank header cells
+        if (gstin == null || gstin.isEmpty()) {
+            gstin = context.lastGstin;
+        } else {
+            context.lastGstin = gstin;
+        }
+
+        if (invNum == null || invNum.isEmpty()) {
+            invNum = context.lastInvNum;
+        } else {
+            context.lastInvNum = invNum;
+        }
+
+        if (invDate == null) {
+            invDate = context.lastInvDate;
+        } else {
+            context.lastInvDate = invDate;
+        }
+
+        if (pos == null || pos.isEmpty()) {
+            pos = context.lastPos;
+        } else {
+            context.lastPos = pos;
+        }
+
         BigDecimal taxableValue = getBigDecimalValue(row, indices, "taxableValue");
         BigDecimal rate = getBigDecimalValue(row, indices, "rate");
         BigDecimal igst = getBigDecimalValue(row, indices, "igst");
@@ -118,7 +159,6 @@ public class Gstr2aParser {
         BigDecimal sgst = getBigDecimalValue(row, indices, "sgst");
         BigDecimal utgst = getBigDecimalValue(row, indices, "utgst");
         BigDecimal cess = getBigDecimalValue(row, indices, "cess");
-        String pos = getStringValue(row, indices, "pos");
         boolean isAmendment = sheetName.endsWith("A");
         String hsnSac = getStringValue(row, indices, "hsnSac");
         
@@ -128,7 +168,7 @@ public class Gstr2aParser {
         String reverseChargeStr = getStringValue(row, indices, "reverseCharge");
         boolean reverseCharge = "Y".equalsIgnoreCase(reverseChargeStr) || "Yes".equalsIgnoreCase(reverseChargeStr);
 
-        // Validation
+        // Validation - only validate header info if it's new/provided, or if it's a standalone row
         GstinValidator.validate(gstin, sheetName, rowNum).ifPresent(errors::add);
         errors.addAll(InvoiceValidator.validate(invNum, invDate, sheetName, rowNum));
         errors.addAll(TaxAmountValidator.validate(taxableValue, rate, igst, cgst, sgst, utgst, appConfig.getTolerance().getTaxAmount(), pos, gstin, sheetName, rowNum));

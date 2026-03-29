@@ -16,6 +16,7 @@ com\gstextract\parser\SubTableParser.class
 com\gstextract\validator\GstinValidator.class
 com\gstextract\validator\InvoiceValidator.class
 com\gstextract\parser\Gstr2aParser.class
+com\gstextract\parser\Gstr2aParser$ParserContext.class
 com\gstextract\model\InwardInvoice.class
 com\gstextract\model\Invoice.class
 com\gstextract\model\SourceType.class

@@ -1,4 +1,4 @@
-# Created at 2026-03-29T17:37:47.553
+# Created at 2026-03-29T18:35:40.052
 Boot Manifest-JAR contains absolute paths in classpath 'D:\Work\Projects\GeminiCLI\Projects\GST Extract Tool - GeminiCLI\backend\target\test-classes'
 Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 'other' has different root
