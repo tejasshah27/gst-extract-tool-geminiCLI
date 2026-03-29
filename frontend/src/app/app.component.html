@@ -1,0 +1,61 @@
+<div class="container">
+  <header>
+    <h1>GST Extract Tool</h1>
+  </header>
+
+  <main>
+    <div class="form-container">
+      <div class="form-group">
+        <label for="returnType">Return Type:</label>
+        <select id="returnType" [ngModel]="returnType()" (ngModelChange)="returnType.set($event)">
+          <option value="GSTR1">GSTR-1</option>
+          <option value="GSTR2A">GSTR-2A</option>
+          <option value="GSTR2B">GSTR-2B</option>
+          <option value="GSTR3B">GSTR-3B</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="returnFile">GST Return File:</label>
+        <input type="file" id="returnFile" (change)="onFileSelected($event, 'return')" accept=".xlsx" />
+        <span class="file-name" *ngIf="returnFile()">{{ returnFile()?.name }}</span>
+      </div>
+
+      <div class="form-group" *ngIf="showPurchaseRegister()">
+        <label for="purchaseFile">Purchase Register:</label>
+        <input type="file" id="purchaseFile" (change)="onFileSelected($event, 'purchase')" accept=".xlsx" />
+        <span class="file-name" *ngIf="purchaseRegisterFile()">{{ purchaseRegisterFile()?.name }}</span>
+      </div>
+
+      <div class="form-group">
+        <label>Mode:</label>
+        <div class="radio-group">
+          <label><input type="radio" name="mode" value="validate" [ngModel]="mode()" (ngModelChange)="mode.set($event)" /> Validate</label>
+          <label><input type="radio" name="mode" value="reconcile" [ngModel]="mode()" (ngModelChange)="mode.set($event)" /> Reconcile</label>
+          <label><input type="radio" name="mode" value="export" [ngModel]="mode()" (ngModelChange)="mode.set($event)" /> Export</label>
+          <label><input type="radio" name="mode" value="all" [ngModel]="mode()" (ngModelChange)="mode.set($event)" /> All</label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button (click)="onSubmit()" [disabled]="isProcessing()">
+          <span *ngIf="!isProcessing()">Submit</span>
+          <span *ngIf="isProcessing()">Processing...</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="result-area" *ngIf="successMessage() || errorMessage()">
+      <div class="message success" *ngIf="successMessage()">
+        <p>✓ {{ successMessage() }}</p>
+        <a *ngIf="downloadUrl()" [href]="downloadUrl()" download="result.xlsx" class="download-link">
+          ⬇ Download result.xlsx
+        </a>
+      </div>
+
+      <div class="message error" *ngIf="errorMessage()">
+        <p>✗ {{ errorMessage() }}</p>
+      </div>
+    </div>
+  </main>
+</div>

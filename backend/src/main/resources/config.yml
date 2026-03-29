@@ -1,0 +1,31 @@
+app:
+  tolerance:
+    taxAmount: 1.00
+
+  columnMappings:
+    gstr1:
+      b2b:
+        gstin: ["GSTIN of Recipient", "Recipient GSTIN", "GSTIN/UIN of Recipient"]
+        invoiceNumber: ["Invoice Number", "Invoice No", "Invoice No."]
+        invoiceDate: ["Invoice Date", "Invoice Dt"]
+        taxableValue: ["Taxable Value", "Total Taxable Value"]
+        igst: ["Integrated Tax Amount", "IGST Amount", "IGST"]
+        cgst: ["Central Tax Amount", "CGST Amount", "CGST"]
+        sgst: ["State/UT Tax Amount", "SGST/UTGST Amount", "SGST"]
+    gstr2a:
+      b2b:
+        gstin: ["GSTIN of Supplier", "Supplier GSTIN"]
+        invoiceNumber: ["Invoice Number", "Invoice No", "Invoice No."]
+        invoiceDate: ["Invoice Date", "Invoice Dt"]
+        taxableValue: ["Taxable Value", "Total Taxable Value"]
+        igst: ["Integrated Tax Amount", "IGST Amount", "IGST"]
+        cgst: ["Central Tax Amount", "CGST Amount", "CGST"]
+        sgst: ["State/UT Tax Amount", "SGST/UTGST Amount", "SGST"]
+        pos: ["Place of Supply"]
+        reverseCharge: ["Reverse Charge"]
+        itcEligible: ["ITC Eligibility"]
+
+  itcBlockRules:
+    - field: supplierGstin
+      blocklist: []
+    - rcmOnly: false

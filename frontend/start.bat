@@ -1,0 +1,9 @@
+@echo off
+set PORT=4200
+echo Checking for service on port %PORT%...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :%PORT% ^| findstr LISTENING') do (
+    echo Found process with PID %%a on port %PORT%. Killing...
+    taskkill /F /PID %%a
+)
+echo Starting Frontend...
+npm start
