@@ -1,0 +1,6 @@
+com\gstextract\parser\Gstr2aParserTest.class
+com\gstextract\api\ProcessControllerTest.class
+com\gstextract\util\ExcelGenerator.class
+com\gstextract\parser\ParseUtilsTest.class
+com\gstextract\validator\GstinValidatorTest.class
+com\gstextract\validator\TaxAmountValidatorTest.class

@@ -1,5 +1,5 @@
 # Java/Maven
-target/
+# target/  <-- Removed as per request to not exclude anything from backend
 *.class
 *.jar
 *.war
@@ -29,8 +29,8 @@ dist/
 Thumbs.db
 
 # Project Specific
-backend/output/
-backend/excels/
-backend/excels_large/
+# backend/output/       <-- Included as per request
+# backend/excels/       <-- Included as per request
+# backend/excels_large/ <-- Included as per request
 frontend/.editorconfig
 frontend/.gitignore
